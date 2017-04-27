@@ -4,7 +4,7 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
 
-from load_data import train_generator
+from load_data import train_generator, train_sliced_generator, train_sliced
 from keras.applications.resnet50 import ResNet50
 
 """
@@ -14,29 +14,39 @@ from keras.applications.resnet50 import ResNet50
     (untested - but compiles and runs)
     note: currently assumes small set of data.
 """
-model = Sequential()
-model.add(Conv2D(3, (3, 3), activation='relu', padding='same', input_shape=(4992, 3328, 3)))
-model.add(ResNet50(weights='imagenet', include_top=False))
-model.add(Flatten())
-model.add(Dense(512))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(5))
+model = Sequential([
+    Conv2D(32, kernel_size=(2, 2),
+                 activation='relu',
+                 input_shape=(416, 624, 3)),
+    Conv2D(64, (2, 2), activation='relu'),
+    Dropout(0.25),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    Dense(5)
+]);
 
 model.summary()
 
 model.compile(optimizer='adam',
-              loss='mse')
+              loss='mse', 
+              metrics=['accuracy'])
 
-generator = train_generator(5)
+#generator = train_sliced_generator(2)
+import numpy as np
+x, y = train_sliced(4)
+x_tr, y_tr = x[2:,:,:,:], y[2:,:]
+x_val, y_val = x[2:,:,:,:], y[2:,:]
 
-model.fit_generator(
-    generator, 
-    10, # sample per epoch 
-    epochs=1, 
-    verbose=1, callbacks=None, validation_data=None, validation_steps=None, class_weight=None, max_q_size=10, workers=1, pickle_safe=False, initial_epoch=0
-)
+model.fit(x_tr, y_tr, batch_size=1, epochs=5, validation_data=(x_val, y_val))
 
-model.save('model_resnet_regressor_model.h5')
+# model.fit_generator(
+#    generator, 
+#    2, # sample per epoch 
+#    epochs=1, 
+#    verbose=1, 
+#    callbacks=None, 
+#    validation_data=None,
+# )
 
-
+model.save('model_sliced_resnet_regressor_model.h5')
