@@ -1,6 +1,6 @@
 """Catalogs all the bounding boxes to json.
 
-working off of: https://www.kaggle.com/ranbato/noaa-fisheries-steller-sea-lion-population-count/finding-the-dots
+Writes annotations to 'instances.json'
 
 Save dots to a file as output for object detection
 Following COCO json formatting http://mscoco.org/dataset/#download
@@ -15,66 +15,94 @@ import glob
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import cv2
+import skimage.feature
 
 # Filter ranges for each dot color.
-redRange = [np.array([160, 0, 0]), np.array([255, 50, 50])]
-magnetaRange = [np.array([160, 0, 160]), np.array([255, 50, 255])]
-brownRange = [np.array([76, 39, 5]), np.array([94, 53, 22])]
-blueRange = [np.array([0, 0, 160]), np.array([56, 56, 255])]
-greenRange = [np.array([0, 160, 0]), np.array([56, 255, 56])]
-colorRanges = [redRange, magnetaRange, brownRange, blueRange, greenRange ]
-
-red = (255, 0, 0)
-magneta = (255, 0, 255)
-brown = (78, 42, 8)
-blue = (0, 0, 255)
-green = (0, 255, 0)
-colors = [red, magneta, brown, blue, green]
-
 info = {}
 images = []
 annotations = []
 annotation_id = 0
 img_names = glob.glob("./data/TrainDotted/*.jpg")
+img_names = [i.replace('./data/TrainDotted/','') for i in img_names]
 
 for i, img_name in enumerate(img_names):
+
     # tick
     print 'processing image: {0}'.format(i)
 
-    # load image
-    img = cv2.cvtColor(cv2.imread(img_name), cv2.COLOR_BGR2RGB)
+    # read the Train and Train Dotted images
+    image_1 = cv2.imread("./data/TrainDotted/" + img_name)
+    image_2 = cv2.imread("./data/Train/" + img_name)
+    
+    # absolute difference between Train and Train Dotted
+    image_3 = cv2.absdiff(image_1,image_2)
 
+    print np.shape(image_1)
+    print img_name
     # create json image description
     image_json = {
         'id' : int(img_name.replace('./data/TrainDotted/','').replace('.jpg','')),
-        'width' : np.shape(img)[1],  # width is 1, not 0!!
-        'height' : np.shape(img)[0], # originally had this wrong
+        'width' : np.shape(image_1)[1],  # width is 1, not 0!!
+        'height' : np.shape(image_1)[0], # originally had this wrong
         'file_name' : img_name.replace('./data/TrainDotted/','')
     }
     images.append(image_json)
 
-    # find bounding boxes
-    counts = np.zeros(5)
-    for color in range(0,5):
-        cmsk = cv2.inRange(img, colorRanges[color][0], colorRanges[color][1])
-        circles = cv2.HoughCircles(cmsk,cv2.cv.CV_HOUGH_GRADIENT,1,50, param1=40,param2=1,minRadius=2,maxRadius=10)
+    # mask out blackened regions from Train Dotted
+    mask_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
+    mask_1[mask_1 < 20] = 0
+    mask_1[mask_1 > 0] = 255
+    
+    mask_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
+    mask_2[mask_2 < 20] = 0
+    mask_2[mask_2 > 0] = 255
+    
+    image_4 = cv2.bitwise_or(image_3, image_3, mask=mask_1)
+    image_5 = cv2.bitwise_or(image_4, image_4, mask=mask_2) 
+    
+    # convert to grayscale to be accepted by skimage.feature.blob_log
+    image_6 = cv2.cvtColor(image_5, cv2.COLOR_BGR2GRAY)
+    
+    # detect blobs
+    blobs = skimage.feature.blob_log(image_6, min_sigma=3, max_sigma=4, num_sigma=1, threshold=0.02)
+    
+    # prepare the image to plot the results on
+    image_7 = cv2.cvtColor(image_6, cv2.COLOR_GRAY2BGR)
+    
+    for blob in blobs:
+        # get the coordinates for each blob
+        y, x, s = blob
+        # get the color of the pixel from Train Dotted in the center of the blob
+        b,g,r = image_1[int(y)][int(x)][:]
+        
+        seal_type = 0
 
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            counts[color] = len(circles[0,:])
+        # decision tree to pick the class of the blob by looking at the color in Train Dotted
+        if r > 200 and b < 50 and g < 50: # RED
+            seal_type = 1         
+        elif r > 200 and b > 200 and g < 50: # MAGENTA
+            seal_type = 2     
+        elif r < 100 and b < 100 and 150 < g < 200: # GREEN
+            seal_type = 3
+        elif r < 100 and  100 < b and g < 100: # BLUE
+            seal_type = 4
+        elif r < 150 and b < 50 and g < 100:  # BROWN
+            seal_type = 5
+        else:
+            print 'continuing'
+            continue
 
-            for i in circles[0,:]:
-                # create json annotation
-                # this is mediumly good, -25 + 25...
-                annotations.append({
-                    "id" : annotation_id,
-                    "image_id" : image_json['id'],
-                    "category_id" : color,
-                    # TODO: confirm this order is correct! 0,1 for x,y
-                    "bbox" : [i[0].item(), i[1].item(), 50, 50]
-                })
-                annotation_id += 1
-                print 'creating annotation: {0}'.format(annotation_id)
+        annotations.append({
+            "id" : annotation_id,
+            "image_id" : image_json['id'],
+            "category_id" : seal_type,
+            "bbox" : [x, y, 50, 50]
+        })
+
+        annotation_id += 1
 
 info['images'] = images
 info['annotations'] = annotations

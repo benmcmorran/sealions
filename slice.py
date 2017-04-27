@@ -3,6 +3,8 @@
     2. creates updated instanes json file
 """
 
+FULL_INSTANCES = 'instances.json'
+SLICED_INSTANACES = 'sliced_instances.json'
 
 import glob
 import numpy as np
@@ -15,7 +17,7 @@ new_w = 624
 data_dir = './data/Train/{0}'
 slice_dir = './data/Sliced/{0}'
 
-with open('small_instances.json') as in_f:
+with open(FULL_INSTANCES) as in_f:
     instances = json.load(in_f)
     images = instances['images']
     annotations = instances['annotations']
@@ -66,13 +68,13 @@ with open('small_instances.json') as in_f:
                     # check if annotation is in new image
                     # original annotations were cornered on label
                     x,y = ann['bbox'][0], ann['bbox'][1]
-                    if  j*new_h < x and x < (j*new_h+new_h) and i*new_w < y and y < (i*new_w+new_w):
+                    if  j*new_h < y and y < (j*new_h+new_h) and i*new_w < x and x < (i*new_w+new_w):
                         sliced_annotations.append({
                             "id" : annotation_id,
                             "image_id" : crop_name,
                             "original_id" : img_id,
                             "category_id" : ann['category_id'],
-                            "bbox" : [x - 25 - j*new_h, y - 25 - i*new_w, 50, 50]
+                            "bbox" : [x - 25 - i*new_w, y - 25 - j*new_h, 50, 50]
                         })
                         annotation_id += 1
 
@@ -81,5 +83,5 @@ with open('small_instances.json') as in_f:
         'annotations' : sliced_annotations
     }
 
-    with open("sliced_instances.json", "w") as out:
+    with open(SLICED_INSTANACES, "w") as out:
         json.dump(sliced_instances, out, indent=1)
