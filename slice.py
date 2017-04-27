@@ -3,8 +3,8 @@
     2. creates updated instanes json file
 """
 
-FULL_INSTANCES = 'instances.json'
-SLICED_INSTANACES = 'sliced_instances.json'
+FULL_INSTANCES = 'small_instances.json'
+SLICED_INSTANACES = 'sliced_small_instances.json'
 
 import glob
 import numpy as np
