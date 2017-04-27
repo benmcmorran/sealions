@@ -4,6 +4,12 @@ working off of: https://www.kaggle.com/ranbato/noaa-fisheries-steller-sea-lion-p
 
 Save dots to a file as output for object detection
 Following COCO json formatting http://mscoco.org/dataset/#download
+
+NOTE IMPORTANT: the bounding boxes top left corner is (should be) the dot,
+                and then it extends down and to the right by 50. This was
+                a mistake, but is currently kept as this helps the slice
+                function - and really the bounding boxes aren't even great
+                ground truth labels. 
 """
 import glob
 import numpy as np
@@ -41,8 +47,8 @@ for i, img_name in enumerate(img_names):
     # create json image description
     image_json = {
         'id' : int(img_name.replace('./data/TrainDotted/','').replace('.jpg','')),
-        'width' : np.shape(img)[0],
-        'height' : np.shape(img)[1],
+        'width' : np.shape(img)[1],  # width is 1, not 0!!
+        'height' : np.shape(img)[0], # originally had this wrong
         'file_name' : img_name.replace('./data/TrainDotted/','')
     }
     images.append(image_json)
@@ -59,10 +65,12 @@ for i, img_name in enumerate(img_names):
 
             for i in circles[0,:]:
                 # create json annotation
+                # this is mediumly good, -25 + 25...
                 annotations.append({
                     "id" : annotation_id,
                     "image_id" : image_json['id'],
                     "category_id" : color,
+                    # TODO: confirm this order is correct! 0,1 for x,y
                     "bbox" : [i[0].item(), i[1].item(), 50, 50]
                 })
                 annotation_id += 1

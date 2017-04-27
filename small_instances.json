@@ -2,63 +2,63 @@
   "images": [
     {
       "file_name": "41.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 41, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "42.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 42, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "43.jpg", 
-      "width": 3744, 
+      "width": 5616, 
       "id": 43, 
-      "height": 5616
+      "height": 3744
     }, 
     {
       "file_name": "44.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 44, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "45.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 45, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "46.jpg", 
-      "width": 3744, 
+      "width": 5616, 
       "id": 46, 
-      "height": 5616
+      "height": 3744
     }, 
     {
       "file_name": "47.jpg", 
-      "width": 3744, 
+      "width": 5616, 
       "id": 47, 
-      "height": 5616
+      "height": 3744
     }, 
     {
       "file_name": "48.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 48, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "49.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 49, 
-      "height": 4992
+      "height": 3328
     }, 
     {
       "file_name": "50.jpg", 
-      "width": 3328, 
+      "width": 4992, 
       "id": 50, 
-      "height": 4992
+      "height": 3328
     }
   ], 
   "annotations": [
