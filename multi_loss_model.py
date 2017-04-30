@@ -20,12 +20,15 @@ if TRANSFER_LEARNING:
     old_model = load_model(INIT_MODEL_NAME)
 
     # load specific weights
-    res_weights = old_model.layers[0].get_weights()
+    first_weights = old_model.layers[0].get_weights()
+    res_weights = old_model.layers[1].get_weights()
     last_weights = old_model.layers[-1].get_weights()
 
     # define functional model
     main_input = Input(shape=(416,624,3), name='main_input')
     x = old_model.layers[0]
+    x.set_weights(first_weights)
+    x = old_model.layers[1]
     x.set_weights(res_weights)
     x = x(main_input)
     x = Dropout(0.25)(x)
@@ -59,12 +62,12 @@ generator = multi_generator(6)
 
 final_model.fit_generator(
    generator, 
-   1, # sample per epoch 
-   epochs=1, 
+   100, # sample per epoch 
+   epochs=5, 
    verbose=1, 
    callbacks=[save], 
    pickle_safe=True,
    class_weight={
-    0:10,
-    1:1}
+    0:1,
+    1:10}
 )
