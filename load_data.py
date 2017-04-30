@@ -101,7 +101,7 @@ def multi_generator(batch_size=6):
         generates batches of even size only
     """
 
-    with open('sliced_small_instances.json') as in_f:
+    with open('sliced_instances.json') as in_f:
         all_instances = json.load(in_f)
 
     all_images = all_instances['images']
@@ -119,7 +119,7 @@ def multi_generator(batch_size=6):
                 i += _i
                 img = all_images[i]
                 file_name = img['file_name']
-                raw_img = cv2.imread('./data/Sliced/{0}'.format(file_name))
+                raw_img = cv2.imread('./data/SlicedTrain/{0}'.format(file_name))
                 label = np.array([0,0,0,0,0])
                 correct_ann = [ann for ann in all_annotations if ann['image_id'] == file_name]
                 for ann in correct_ann:
@@ -127,10 +127,10 @@ def multi_generator(batch_size=6):
                 batch_images.append(raw_img)
                 batch_labels.append(label)
                 if np.sum(label) > 0:
-                    batch_detect.append(0.)
+                    batch_detect.append(1.)
                 else:
                     batch_detect.append(0.)
-        yield({'main_input' : np.array(batch_images)}, {'detect_output': np.array(batch_detect), 'regress_output': np.array(batch_labels), 'final_output': np.array(batch_labels)})
+            yield({'main_input' : np.array(batch_images)}, {'detect_output': np.array(batch_detect), 'regress_output': np.array(batch_labels), 'final_output': np.array(batch_labels)})
 
     # with open('target_sliced_instances.json') as in_f:
     #     target_instances = json.load(in_f)    

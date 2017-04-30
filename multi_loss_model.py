@@ -11,14 +11,14 @@ from keras.models import Model, load_model
 
 from load_data import multi_generator
 
-TRANSFER_LEARNING = False          # whether to transfer weights
-INIT_MODEL_NAME = 'trash.h5'       # the model to transfer from
-MODEL_NAME = 'model_multi_loss.h5' # the saved model
+TRANSFER_LEARNING = True                      # whether to transfer weights`
+INIT_MODEL_NAME = 'model_target_full_res.h5'  # the model to transfer from
+MODEL_NAME = 'model_multi_loss.h5'            # the saved model
 
 if TRANSFER_LEARNING:
     # load old model
     old_model = load_model(INIT_MODEL_NAME)
-
+    old_model.summary()
     # load specific weights
     first_weights = old_model.layers[0].get_weights()
     res_weights = old_model.layers[1].get_weights()
@@ -26,14 +26,15 @@ if TRANSFER_LEARNING:
 
     # define functional model
     main_input = Input(shape=(416,624,3), name='main_input')
-    x = old_model.layers[0]
-    x.set_weights(first_weights)
+    conv_x = old_model.layers[0]
+    conv_x.set_weights(first_weights)
+    conv_x = conv_x(main_input)
     x = old_model.layers[1]
     x.set_weights(res_weights)
-    x = x(main_input)
+    x = x(conv_x)
     x = Dropout(0.25)(x)
     x = Flatten()(x)
-    feature_map = Dense(64, activation='relu')(x)
+    feature_map = Dense(128, activation='relu')(x)
 
     # split and define detection head
     detect = Dense(64, activation='relu')(feature_map)
