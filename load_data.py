@@ -106,11 +106,24 @@ def multi_generator(batch_size=6):
 
     all_images = all_instances['images']
     all_annotations = all_instances['annotations']
+    
+    annotation_map = {}
+    for img in all_images:
+        file_name = img['file_name']
+        label = np.array([0,0,0,0,0])
+        correct_ann = [ann for ann in all_annotations if ann['image_id'] == file_name]
+        for ann in correct_ann:
+            label[ann['category_id'] - 1] += 1.
+        if np.sum(label) > 0:
+            detect = 1.
+        else:
+            detect = 0.
+        annotation_map[file_name] = (label, detect)
 
     while True:
         i = 0
         while i + batch_size < len(all_images):
-
+            
             batch_images = []
             batch_labels = []
             batch_detect = []
@@ -120,17 +133,11 @@ def multi_generator(batch_size=6):
                 img = all_images[i]
                 file_name = img['file_name']
                 raw_img = cv2.imread('./data/Sliced/{0}'.format(file_name))
-                label = np.array([0,0,0,0,0])
-                correct_ann = [ann for ann in all_annotations if ann['image_id'] == file_name]
-                for ann in correct_ann:
-                    label[ann['category_id'] - 1] += 1
+                label, detect = annotation_map[file_name]
                 batch_images.append(raw_img)
                 batch_labels.append(label)
-                if np.sum(label) > 0:
-                    batch_detect.append(0.)
-                else:
-                    batch_detect.append(0.)
-        yield({'main_input' : np.array(batch_images)}, {'detect_output': np.array(batch_detect), 'regress_output': np.array(batch_labels), 'final_output': np.array(batch_labels)})
+                batch_detect.append(detect)
+            yield({'main_input' : np.array(batch_images)}, {'detect_output': np.array(batch_detect), 'regress_output': np.array(batch_labels), 'final_output': np.array(batch_labels)})
 
     # with open('target_sliced_instances.json') as in_f:
     #     target_instances = json.load(in_f)    
