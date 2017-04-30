@@ -11,7 +11,7 @@ from keras.models import Model, load_model
 
 from load_data import multi_generator
 
-TRANSFER_LEARNING = True                      # whether to transfer weights`
+TRANSFER_LEARNING = False                      # whether to transfer weights`
 INIT_MODEL_NAME = 'model_target_full_res.h5'  # the model to transfer from
 MODEL_NAME = 'model_multi_loss.h5'            # the saved model
 
@@ -63,8 +63,8 @@ generator = multi_generator(6)
 
 final_model.fit_generator(
    generator, 
-   100, # sample per epoch 
-   epochs=5, 
+   1000, # sample per epoch 
+   epochs=25, 
    verbose=1, 
    callbacks=[save], 
    pickle_safe=True,
