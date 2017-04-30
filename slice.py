@@ -1,10 +1,14 @@
 """
+To 
+
+This file:
     1. slices images into smaller images
     2. creates updated instanes json file
 """
 
-FULL_INSTANCES = 'small_instances.json'
-SLICED_INSTANACES = 'sliced_small_instances.json'
+FULL_INSTANCES = 'instances.json'
+SLICED_INSTANCES = 'sliced_instances.json'
+TARGET_SLICED_INSTANCES = 'target_sliced_instances.json'
 
 import glob
 import numpy as np
@@ -15,7 +19,7 @@ import json
 new_h = 416
 new_w = 624
 data_dir = './data/Train/{0}'
-slice_dir = './data/Sliced/{0}'
+slice_dir = './data/SlicedTrain/{0}'
 
 with open(FULL_INSTANCES) as in_f:
     instances = json.load(in_f)
@@ -23,7 +27,9 @@ with open(FULL_INSTANCES) as in_f:
     annotations = instances['annotations']
 
     sliced_annotations = []
+    target_sliced_annotations = []
     sliced_images = []
+    target_sliced_images = []
 
     annotation_id = 0
 
@@ -46,13 +52,10 @@ with open(FULL_INSTANCES) as in_f:
         for i in xrange(slices_width):
             for j in xrange(slices_height):
                 # start in top left
-                
-                # TODO: account for cut out image...
-                # if i == (slices_width - 1) and j == (slices_height - 1):
                 crop_name = '{0}-{1}-{2}.jpg'.format(img_id, i, j)
                 crop = loaded_img[ j*new_h:(j*new_h+new_h), i*new_w:(i*new_w+new_w) ]
                 
-                cv2.imwrite('./data/Sliced/{0}'.format(crop_name), crop)
+                cv2.imwrite('./data/SlicedTrain/{0}'.format(crop_name), crop)
 
                 # save image information
                 image_json = {
@@ -61,27 +64,41 @@ with open(FULL_INSTANCES) as in_f:
                     'height' : new_h,
                     'file_name' : crop_name
                 }
-                sliced_images.append(image_json)
 
                 # find annotations
+                found = 0
                 for ann in img_annotations:
                     # check if annotation is in new image
                     # original annotations were cornered on label
                     x,y = ann['bbox'][0], ann['bbox'][1]
                     if  j*new_h < y and y < (j*new_h+new_h) and i*new_w < x and x < (i*new_w+new_w):
-                        sliced_annotations.append({
+                        ann = {
                             "id" : annotation_id,
                             "image_id" : crop_name,
                             "original_id" : img_id,
                             "category_id" : ann['category_id'],
                             "bbox" : [x - 25 - i*new_w, y - 25 - j*new_h, 50, 50]
-                        })
+                        }
+                        target_sliced_annotations.append(ann)
+                        sliced_annotations.append(ann)
+                        found += 1
                         annotation_id += 1
-
+                if found > 0:
+                    target_sliced_images.append(image_json)
+                sliced_images.append(image_json)
+                #target_sliced_images.append(image_json)
+    
     sliced_instances = {
         'images' : sliced_images,
         'annotations' : sliced_annotations
     }
 
-    with open(SLICED_INSTANACES, "w") as out:
+    target_sliced_instances = {
+        'images' : target_sliced_images,
+        'annotations' : target_sliced_annotations
+    }
+
+    with open(SLICED_INSTANCES, "w") as out:
         json.dump(sliced_instances, out, indent=1)
+    with open(TARGET_SLICED_INSTANCES, "w") as out:
+        json.dump(target_sliced_instances, out, indent=1)

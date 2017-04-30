@@ -19,16 +19,24 @@ import pandas as pd
 import os
 import cv2
 import skimage.feature
+import gc
+gc.enable()
+
+
+mismatched = set([3,7,9,21,30,34,71,81,89,97,151,184,215,234,242,268,290,311,331,344,380,384,406,421,469,475,490,499,507,530,531,605,607,614,621,638,644,687,712,721,767,779,781,794,800,811,839,840,869,882,901,903,905,909,913,927,946])
 
 # Filter ranges for each dot color.
 info = {}
 images = []
 annotations = []
 annotation_id = 0
-img_names = glob.glob("./data/TrainDotted/*.jpg")
-img_names = [i.replace('./data/TrainDotted/','') for i in img_names]
+img_names = glob.glob("./data/Train/*.jpg")
+img_names = [i.replace('./data/Train/','') for i in img_names]
 
 for i, img_name in enumerate(img_names):
+    # skip mis-matched 
+    if int(img_name.replace('.jpg','')) in mismatched:
+	continue    
 
     # tick
     print 'processing image: {0}'.format(i)
