@@ -4,6 +4,7 @@ import glob
 import pandas
 import re
 import json
+from keras.utils import to_categorical
 
 def multi_generator(batch_size=6):
     """generates batches of detection, regression, and total
@@ -29,9 +30,9 @@ def multi_generator(batch_size=6):
 	else:
 	    label = np.array([0.,0.,0.,0.,0.])
         if np.sum(label) > 0:
-            detect = 1.
+            detect = np.array([1., 0]) # to_categorical(1.)
         else:
-            detect = 0.
+            detect = np.array([0., 1]) # to_categorical(0.)
         annotation_map[file_name] = (label, detect)
     N = len(all_images)
     while True:
