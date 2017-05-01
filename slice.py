@@ -1,9 +1,7 @@
 """
-To 
-
 This file:
     1. slices images into smaller images
-    2. creates updated instanes json file
+    2. creates updated instances json file
 """
 
 FULL_INSTANCES = 'instances.json'
@@ -46,9 +44,6 @@ with open(FULL_INSTANCES) as in_f:
         slices_width = w / new_w
         slices_height = h / new_h
 
-        print w, h
-        print slices_width, slices_height
-
         for i in xrange(slices_width):
             for j in xrange(slices_height):
                 # start in top left
@@ -86,7 +81,6 @@ with open(FULL_INSTANCES) as in_f:
                 if found > 0:
                     target_sliced_images.append(image_json)
                 sliced_images.append(image_json)
-                #target_sliced_images.append(image_json)
     
     sliced_instances = {
         'images' : sliced_images,

@@ -5,13 +5,14 @@ to the network.
 If creating model and transfering weights, set TRANSFER_LEARNING
 to true, otherwise set the path to the saved model
 """
+
 from keras.layers import Dropout, Flatten, multiply, Input, Dense
 from keras.callbacks import ModelCheckpoint
 from keras.models import Model, load_model
 
 from load_data import multi_generator
 
-TRANSFER_LEARNING = False                      # whether to transfer weights`
+TRANSFER_LEARNING = False                     # whether to transfer weights`
 INIT_MODEL_NAME = 'model_target_full_res.h5'  # the model to transfer from
 MODEL_NAME = 'model_multi_loss.h5'            # the saved model
 
@@ -54,21 +55,22 @@ final_model.compile(
     optimizer='adam',
     loss={'detect_output': 'binary_crossentropy', 
           'regress_output': 'mse',
-          'final_output': 'mse'}, #
-    loss_weights={'final_output': 2,'detect_output': 1, 'regress_output': 1})
+          'final_output': 'mse'}, 
+    loss_weights={'final_output': 1,'detect_output': 1, 'regress_output': 1},
+    metrics={ 'detect_output' : 'accuracy'})
 
-save = ModelCheckpoint('model_multi_loss.h5')
+save = ModelCheckpoint(MODEL_NAME)
 
-generator = multi_generator(6)
+generator = multi_generator(10)
 
 final_model.fit_generator(
    generator, 
-   1000, # sample per epoch 
+   1000, # save model every 1000 samples
    epochs=25, 
    verbose=1, 
    callbacks=[save], 
    pickle_safe=True,
    class_weight={
     0:1,
-    1:10}
+    1:1}
 )
