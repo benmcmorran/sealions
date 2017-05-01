@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 import math
 from enum import Enum, unique
@@ -32,14 +33,14 @@ class SeaLionType(Enum):
         else:
             return None
 
-def extract_thumbnail(img, x, y, cls, name):
+def extract_thumbnail(img, x, y, cls, imnum, name):
     y = int(y)
     x = int(x)
-    thumbnail = img[y - 32 : y + 32, x - 32 : x + 32, :]
-    if thumbnail.shape != (64, 64, 3):
+    thumbnail = img[y - 64 : y + 64, x - 64 : x + 64, :]
+    if thumbnail.shape != (128, 128, 3):
         return False
     
-    path = os.path.join('D:/KaggleNOAASeaLions/Extracted', cls, str(name) + '.jpg')
+    path = os.path.join('D:/KaggleNOAASeaLions/Extracted', cls, str(imnum) + '_' + str(name) + '.jpg')
     if not os.path.isdir(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
     cv2.imwrite(path, thumbnail)
@@ -60,20 +61,22 @@ def empty_location(shape, blobs):
         if is_location_empty(y, x, blobs):
             return (y, x)
 
-lion_counts = { lion_type: 0 for lion_type in SeaLionType }
-empty_count = 0
-
-file_names = (
-    os.path.basename(path) for path 
-    in glob.iglob('D:/KaggleNOAASeaLions/Train/*.jpg')
-)
+if len(sys.argv) >= 2 and sys.argv[1]:
+    file_names = ['D:/KaggleNOAASeaLions/Train/' + str(sys.argv[1]) + '.jpg']
+else:
+    file_names = list(
+        os.path.basename(path) for path 
+        in glob.iglob('D:/KaggleNOAASeaLions/Train/*.jpg')
+    )
 
 mismatched = [3,7,9,21,30,34,71,81,89,97,151,184,215,234,242,268,290,311,331,344,380,384,406,421,469,475,490,499,507,530,531,605,607,614,621,638,644,687,712,721,767,779,781,794,800,811,839,840,869,882,901,903,905,909,913,927,946]
 
-for name in file_names:
-    print('Processing {}'.format(name))
+for i, name in enumerate(file_names):
+    pct_complete = i / len(file_names)
+    print('Processing {} ({:.2%} complete)'.format(name, pct_complete), end='\r')
+    num = int(name.split('.')[0])
 
-    if int(name.split('.')[0]) in mismatched:
+    if num in mismatched:
         print('Skipping mismatched image')
         continue 
     
@@ -87,22 +90,36 @@ for name in file_names:
 
     diff = cv2.absdiff(real, dotted)
     diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-    mask = cv2.cvtColor(dotted, cv2.COLOR_BGR2GRAY)
-    mask[mask < 20] = 0
-    mask[mask > 0] = 255
-    diff = cv2.bitwise_or(diff, diff, mask=mask)
+    
+    mask1 = cv2.cvtColor(real, cv2.COLOR_BGR2GRAY)
+    mask1[mask1 < 20] = 0
+    mask1[mask1 > 0] = 255
+
+    mask2 = cv2.cvtColor(dotted, cv2.COLOR_BGR2GRAY)
+    mask2[mask2 < 20] = 0
+    mask2[mask2 > 0] = 255
+
+    diff = cv2.bitwise_or(diff, diff, mask=mask1)
+    diff = cv2.bitwise_or(diff, diff, mask=mask2)
 
     blobs = skimage.feature.blob_log(diff, min_sigma=3, max_sigma=4, num_sigma=1, threshold=0.02)
+    annotated = real.copy()
 
+    lion_count = 0
     for y, x, _ in blobs:
         g, b, r = dotted[int(y)][int(x)][:]
         lion_type = SeaLionType.from_color(r, g, b)
         if not lion_type:
             continue
+        
+        if extract_thumbnail(real, x, y, lion_type.name, num, lion_count):
+            cv2.rectangle(annotated, (int(x) - 64, int(y) - 64), (int(x) + 64, int(y) + 64), (0, 0, 255), 2)
+            cv2.putText(annotated, str(lion_count), (int(x) - 10, int(y) + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            lion_count += 1
 
-        if extract_thumbnail(real, x, y, lion_type.name, lion_counts[lion_type]):
-            lion_counts[lion_type] += 1
-
-    for y, x in (empty_location(real.shape, blobs) for _ in range(50)):
-        if extract_thumbnail(real, x, y, 'EMPTY', empty_count):
+    cv2.imwrite(os.path.join('D:/KaggleNOAASeaLions/Extracted', str(num) + '.jpg'), annotated)
+    
+    empty_count = 0
+    for y, x in (empty_location(real.shape, blobs) for _ in range(75)):
+        if extract_thumbnail(real, x, y, 'EMPTY', num, empty_count):
             empty_count += 1
